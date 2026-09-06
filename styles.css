@@ -1,0 +1,54 @@
+.chirr-sidebar-container {
+    padding: 16px;
+    overflow-y: auto;
+    height: 100%;
+    background: var(--background-secondary);
+}
+
+.chirr-preview-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.chirr-card {
+    background: var(--background-primary);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 8px;
+    padding: 14px 16px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+
+.chirr-card-error {
+    border-color: var(--text-error);
+}
+
+.chirr-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: 600;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+    font-size: 13px;
+}
+
+.chirr-counter {
+    font-size: 11px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: var(--background-modifier-form-field);
+    font-family: monospace;
+}
+
+.chirr-counter.over-limit {
+    color: var(--text-on-accent);
+    background: var(--text-error);
+}
+
+.chirr-card-body {
+    font-size: 14px;
+    color: var(--text-normal);
+    white-space: pre-wrap;
+    word-break: break-word;
+}

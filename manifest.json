@@ -1,0 +1,9 @@
+{
+  "id": "chirr-thread-composer",
+  "name": "Tweet Storm Composer",
+  "version": "1.0.0",
+  "minAppVersion": "1.0.0",
+  "description": "An Obsidian plugin that transforms Markdown notes into a live, side-by-side social media thread composer with automatic 280-character slicing and [...] split triggers.",
+  "author": "Custom",
+  "isDesktopOnly": false
+}
