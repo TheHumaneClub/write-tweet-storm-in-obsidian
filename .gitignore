@@ -1,2 +1,8 @@
 node_modules/
 .DS_Store
+specs
+.specify/*
+.agents/*
+.agents
+!.agents/skills/
+!.agents/skills/**
