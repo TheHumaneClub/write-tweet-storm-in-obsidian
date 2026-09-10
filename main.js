@@ -39,6 +39,8 @@ var ChirrThreadView = class extends import_obsidian.ItemView {
     __publicField(this, "chunks", []);
     __publicField(this, "cards", []);
     __publicField(this, "activeChunkIndex", -1);
+    __publicField(this, "sourceFilePath", null);
+    __publicField(this, "lastMarkdownView", null);
     __publicField(this, "syncSource", null);
     __publicField(this, "syncReleaseTimer", null);
     __publicField(this, "boundEditorScrollEls", /* @__PURE__ */ new WeakSet());
@@ -112,6 +114,9 @@ var ChirrThreadView = class extends import_obsidian.ItemView {
     this.bindActiveEditor();
   }
   async updateChunksFromFile(file) {
+    this.sourceFilePath = file.path;
+    const sourceView = this.findMarkdownViewForFile(file.path);
+    if (sourceView) this.lastMarkdownView = sourceView;
     const content = await this.app.vault.read(file);
     this.renderChunks(content);
   }
@@ -154,7 +159,9 @@ var ChirrThreadView = class extends import_obsidian.ItemView {
       card.createDiv({ cls: "chirr-card-body", text: tweetText });
       card.addEventListener("click", () => {
         if (this.hasSelectionInside(card)) return;
-        this.syncEditorToChunk(index);
+        void this.syncEditorToChunk(index).catch((error) => {
+          console.error(`${PLUGIN_DISPLAY_NAME} failed to navigate to tweet source`, error);
+        });
       });
     });
     if (!this.chunks[this.activeChunkIndex]) {
@@ -369,11 +376,51 @@ var ChirrThreadView = class extends import_obsidian.ItemView {
   }
   getActiveEditorView() {
     const activeView = this.app.workspace.getActiveViewOfType(import_obsidian.MarkdownView);
-    return activeView != null ? activeView : null;
+    if (activeView == null ? void 0 : activeView.file) {
+      this.sourceFilePath = activeView.file.path;
+      this.lastMarkdownView = activeView;
+      return activeView;
+    }
+    if (this.sourceFilePath) {
+      const sourceView = this.findMarkdownViewForFile(this.sourceFilePath);
+      if (sourceView) {
+        this.lastMarkdownView = sourceView;
+        return sourceView;
+      }
+    }
+    if (this.lastMarkdownView && this.getLeafForMarkdownView(this.lastMarkdownView)) {
+      return this.lastMarkdownView;
+    }
+    this.lastMarkdownView = null;
+    return null;
   }
   getActiveEditor() {
     var _a, _b;
     return (_b = (_a = this.getActiveEditorView()) == null ? void 0 : _a.editor) != null ? _b : null;
+  }
+  findMarkdownViewForFile(path) {
+    var _a;
+    for (const leaf of this.app.workspace.getLeavesOfType("markdown")) {
+      if (leaf.view instanceof import_obsidian.MarkdownView && ((_a = leaf.view.file) == null ? void 0 : _a.path) === path) {
+        return leaf.view;
+      }
+    }
+    return null;
+  }
+  getLeafForMarkdownView(view) {
+    const leaf = this.app.workspace.getLeavesOfType("markdown").find((leaf2) => leaf2.view === view);
+    return leaf != null ? leaf : null;
+  }
+  async getOrOpenSourceMarkdownView(openIfMissing) {
+    const existingView = this.getActiveEditorView();
+    if (existingView) return existingView;
+    if (!openIfMissing) return null;
+    if (!this.sourceFilePath) return null;
+    const file = this.app.vault.getFileByPath(this.sourceFilePath);
+    if (!file) return null;
+    const leaf = this.app.workspace.getLeaf("tab");
+    await leaf.openFile(file);
+    return leaf.view instanceof import_obsidian.MarkdownView ? leaf.view : null;
   }
   handleEditorScroll() {
     if (this.syncSource === "sidebar") return;
@@ -436,20 +483,28 @@ var ChirrThreadView = class extends import_obsidian.ItemView {
       }
     });
     if (closestIndex >= 0) {
-      this.syncEditorToChunk(closestIndex, false);
+      void this.syncEditorToChunk(closestIndex, false).catch((error) => {
+        console.error(`${PLUGIN_DISPLAY_NAME} failed to sync editor to tweet card`, error);
+      });
     }
   }
-  syncEditorToChunk(index, focusEditor = true) {
-    const editor = this.getActiveEditor();
+  async syncEditorToChunk(index, focusEditor = true) {
+    const editorView = await this.getOrOpenSourceMarkdownView(focusEditor);
+    const editor = editorView == null ? void 0 : editorView.editor;
     const chunk = this.chunks[index];
     if (!editor || !chunk) return;
     this.activateChunk(index, false, "sidebar");
-    const pos = { line: chunk.fromLine, ch: 0 };
+    if (focusEditor && editorView) {
+      const leaf = this.getLeafForMarkdownView(editorView);
+      if (leaf) await this.app.workspace.revealLeaf(leaf);
+    }
+    const pos = typeof editor.offsetToPos === "function" ? editor.offsetToPos(chunk.fromOffset) : { line: chunk.fromLine, ch: 0 };
+    const endPos = typeof editor.offsetToPos === "function" ? editor.offsetToPos(chunk.toOffset) : pos;
     if (focusEditor && typeof editor.setCursor === "function") {
       editor.setCursor(pos);
     }
     if (typeof editor.scrollIntoView === "function") {
-      editor.scrollIntoView({ from: pos, to: pos }, true);
+      editor.scrollIntoView({ from: pos, to: endPos }, true);
     }
   }
   activateChunk(index, scrollSidebar, source) {
