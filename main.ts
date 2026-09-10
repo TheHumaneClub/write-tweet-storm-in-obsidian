@@ -98,8 +98,9 @@ class ChirrThreadView extends ItemView {
         this.chunks = this.parseChunks(text);
 
         this.chunks.forEach((chunk, index) => {
-            const charCount = chunk.text.length;
-            const isOverLimit = charCount > 280;
+            const tweetText = this.toTweetText(chunk.text);
+            const charCount = tweetText.length;
+            const isOverLimit = charCount > CHUNK_LIMIT;
 
             const card = this.previewList.createDiv({ cls: "chirr-card" });
             card.dataset.chunkIndex = String(index);
@@ -112,10 +113,10 @@ class ChirrThreadView extends ItemView {
             
             header.createSpan({ 
                 cls: `chirr-counter ${isOverLimit ? 'over-limit' : ''}`, 
-                text: `${charCount}/280` 
+                text: `${charCount}/${CHUNK_LIMIT}` 
             });
 
-            card.createDiv({ cls: "chirr-card-body", text: chunk.text });
+            card.createDiv({ cls: "chirr-card-body", text: tweetText });
             card.addEventListener("click", () => this.syncEditorToChunk(index));
         });
 
@@ -166,7 +167,7 @@ class ChirrThreadView extends ItemView {
         const ranges: Array<{ fromOffset: number; toOffset: number }> = [];
         let chunkStart = start;
         let chunkText = "";
-        const tokenPattern = /\S+/g;
+        const tokenPattern = /\[\[[^\]]+\]\]|\S+/g;
         tokenPattern.lastIndex = start;
         let token: RegExpExecArray | null;
 
@@ -175,7 +176,7 @@ class ChirrThreadView extends ItemView {
             const tokenEnd = Math.min(token.index + token[0].length, end);
             const prospective = chunkText ? `${chunkText} ${token[0]}` : token[0];
 
-            if (chunkText && prospective.length > CHUNK_LIMIT) {
+            if (chunkText && this.toTweetText(prospective).length > CHUNK_LIMIT) {
                 ranges.push({ fromOffset: chunkStart, toOffset: this.skipWhitespaceBackward(text, chunkStart, tokenStart) });
                 chunkStart = tokenStart;
                 chunkText = token[0];
@@ -192,6 +193,14 @@ class ChirrThreadView extends ItemView {
         }
 
         return ranges;
+    }
+
+    toTweetText(text: string): string {
+        return text
+            .replace(/\[\[([^\]|]+)\|([^\]]+)\]\]/g, (_match, _target, alias) => alias)
+            .replace(/\[\[([^\]]+)\]\]/g, (_match, target) => target.split("#")[0])
+            .replace(/(^|\s)\^[A-Za-z0-9_-]+\b/g, "$1")
+            .trim();
     }
 
     getLineStarts(text: string): number[] {
