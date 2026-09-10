@@ -59,6 +59,22 @@ var ChirrThreadView = class extends import_obsidian.ItemView {
     container.empty();
     container.addClass("chirr-sidebar-container");
     this.sidebarContainer = container;
+    const toolbar = this.sidebarContainer.createDiv({ cls: "chirr-sidebar-toolbar" });
+    const copyAllButton = toolbar.createEl("button", {
+      cls: "chirr-copy-all-button",
+      text: "Copy all",
+      attr: {
+        type: "button",
+        "aria-label": "Copy all tweets as plain text"
+      }
+    });
+    copyAllButton.title = "Copy all tweets as plain text";
+    (0, import_obsidian.setIcon)(copyAllButton, "copy");
+    copyAllButton.addEventListener("click", async (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      await this.copyAllTweetText();
+    });
     this.previewList = this.sidebarContainer.createDiv({ cls: "chirr-preview-list" });
     this.registerDomEvent(this.sidebarContainer, "scroll", () => this.handleSidebarScroll(), { passive: true });
     this.registerDomEvent(this.sidebarContainer, "copy", (event) => this.copySelectedTweetText(event));
@@ -228,14 +244,28 @@ var ChirrThreadView = class extends import_obsidian.ItemView {
     (_a = event.clipboardData) == null ? void 0 : _a.setData("text/plain", selectedText);
   }
   async copyTweetText(text) {
+    await this.copyTextToClipboard(text, "Tweet copied", "Tweet copy failed");
+  }
+  async copyAllTweetText() {
+    const text = this.getAllTweetText();
+    if (!text) {
+      new import_obsidian.Notice("No tweets to copy");
+      return;
+    }
+    await this.copyTextToClipboard(text, "All tweets copied", "Copy all tweets failed");
+  }
+  getAllTweetText() {
+    return this.chunks.map((chunk) => this.toTweetText(chunk.text)).filter((text) => text.length > 0).join("\n\n");
+  }
+  async copyTextToClipboard(text, successMessage, failureMessage) {
     try {
       await navigator.clipboard.writeText(text);
-      new import_obsidian.Notice("Tweet copied");
+      new import_obsidian.Notice(successMessage);
     } catch (_error) {
       if (this.copyTextWithFallback(text)) {
-        new import_obsidian.Notice("Tweet copied");
+        new import_obsidian.Notice(successMessage);
       } else {
-        new import_obsidian.Notice("Tweet copy failed");
+        new import_obsidian.Notice(failureMessage);
       }
     }
   }

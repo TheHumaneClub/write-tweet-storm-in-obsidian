@@ -11,6 +11,37 @@
     gap: 12px;
 }
 
+.chirr-sidebar-toolbar {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 12px;
+}
+
+.chirr-copy-all-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 30px;
+    padding: 4px 10px;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 4px;
+    color: var(--text-normal);
+    background: var(--background-primary);
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.chirr-copy-all-button:hover,
+.chirr-copy-all-button:focus-visible {
+    background: var(--background-modifier-hover);
+}
+
+.chirr-copy-all-button svg {
+    width: 14px;
+    height: 14px;
+}
+
 .chirr-card {
     background: var(--background-primary);
     border: 1px solid var(--background-modifier-border);

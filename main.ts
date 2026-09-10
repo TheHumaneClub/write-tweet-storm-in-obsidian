@@ -52,6 +52,23 @@ class ChirrThreadView extends ItemView {
         container.addClass("chirr-sidebar-container");
         this.sidebarContainer = container as HTMLElement;
 
+        const toolbar = this.sidebarContainer.createDiv({ cls: "chirr-sidebar-toolbar" });
+        const copyAllButton = toolbar.createEl("button", {
+            cls: "chirr-copy-all-button",
+            text: "Copy all",
+            attr: {
+                type: "button",
+                "aria-label": "Copy all tweets as plain text",
+            },
+        });
+        copyAllButton.title = "Copy all tweets as plain text";
+        setIcon(copyAllButton, "copy");
+        copyAllButton.addEventListener("click", async (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            await this.copyAllTweetText();
+        });
+
         this.previewList = this.sidebarContainer.createDiv({ cls: "chirr-preview-list" });
         this.registerDomEvent(this.sidebarContainer, "scroll", () => this.handleSidebarScroll(), { passive: true });
         this.registerDomEvent(this.sidebarContainer, "copy", (event: ClipboardEvent) => this.copySelectedTweetText(event));
@@ -259,14 +276,35 @@ class ChirrThreadView extends ItemView {
     }
 
     async copyTweetText(text: string) {
+        await this.copyTextToClipboard(text, "Tweet copied", "Tweet copy failed");
+    }
+
+    async copyAllTweetText() {
+        const text = this.getAllTweetText();
+        if (!text) {
+            new Notice("No tweets to copy");
+            return;
+        }
+
+        await this.copyTextToClipboard(text, "All tweets copied", "Copy all tweets failed");
+    }
+
+    getAllTweetText(): string {
+        return this.chunks
+            .map((chunk) => this.toTweetText(chunk.text))
+            .filter((text) => text.length > 0)
+            .join("\n\n");
+    }
+
+    async copyTextToClipboard(text: string, successMessage: string, failureMessage: string) {
         try {
             await navigator.clipboard.writeText(text);
-            new Notice("Tweet copied");
+            new Notice(successMessage);
         } catch (_error) {
             if (this.copyTextWithFallback(text)) {
-                new Notice("Tweet copied");
+                new Notice(successMessage);
             } else {
-                new Notice("Tweet copy failed");
+                new Notice(failureMessage);
             }
         }
     }
