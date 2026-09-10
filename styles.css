@@ -19,6 +19,7 @@
     box-shadow: 0 1px 3px rgba(0,0,0,0.04);
     cursor: pointer;
     transition: border-color 120ms ease, box-shadow 120ms ease, transform 120ms ease;
+    user-select: text;
 }
 
 .chirr-card-error {
@@ -34,10 +35,18 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 8px;
     font-weight: 600;
     color: var(--text-muted);
     margin-bottom: 6px;
     font-size: 13px;
+}
+
+.chirr-card-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
 }
 
 .chirr-counter {
@@ -53,9 +62,36 @@
     background: var(--text-error);
 }
 
+.chirr-copy-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 4px;
+    color: var(--text-muted);
+    background: var(--background-primary);
+    cursor: pointer;
+}
+
+.chirr-copy-button:hover,
+.chirr-copy-button:focus-visible {
+    color: var(--text-normal);
+    background: var(--background-modifier-hover);
+}
+
+.chirr-copy-button svg {
+    width: 14px;
+    height: 14px;
+}
+
 .chirr-card-body {
     font-size: 14px;
     color: var(--text-normal);
     white-space: pre-wrap;
     word-break: break-word;
+    cursor: text;
+    user-select: text;
 }

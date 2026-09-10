@@ -1,4 +1,4 @@
-import { Plugin, ItemView, WorkspaceLeaf, TFile, MarkdownView, EditorPosition, Notice } from 'obsidian';
+import { Plugin, ItemView, WorkspaceLeaf, TFile, MarkdownView, EditorPosition, Notice, setIcon } from 'obsidian';
 
 const VIEW_TYPE_CHIRR = "chirr-thread-view";
 const CHUNK_LIMIT = 280;
@@ -51,6 +51,7 @@ class ChirrThreadView extends ItemView {
 
         this.previewList = this.sidebarContainer.createDiv({ cls: "chirr-preview-list" });
         this.registerDomEvent(this.sidebarContainer, "scroll", () => this.handleSidebarScroll(), { passive: true });
+        this.registerDomEvent(this.sidebarContainer, "copy", (event: ClipboardEvent) => this.copySelectedTweetText(event));
 
         // Listen for live modifications in the vault
         this.registerEvent(
@@ -114,14 +115,32 @@ class ChirrThreadView extends ItemView {
 
             const header = card.createDiv({ cls: "chirr-card-header" });
             header.createSpan({ text: `${index + 1}/` });
-            
-            header.createSpan({ 
+
+            const actions = header.createDiv({ cls: "chirr-card-actions" });
+            actions.createSpan({
                 cls: `chirr-counter ${isOverLimit ? 'over-limit' : ''}`, 
                 text: `${charCount}/${CHUNK_LIMIT}` 
             });
+            const copyButton = actions.createEl("button", {
+                cls: "chirr-copy-button",
+                attr: {
+                    type: "button",
+                    "aria-label": `Copy tweet ${index + 1}`,
+                },
+            });
+            copyButton.title = `Copy tweet ${index + 1}`;
+            setIcon(copyButton, "copy");
+            copyButton.addEventListener("click", async (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                await this.copyTweetText(tweetText);
+            });
 
             card.createDiv({ cls: "chirr-card-body", text: tweetText });
-            card.addEventListener("click", () => this.syncEditorToChunk(index));
+            card.addEventListener("click", () => {
+                if (this.hasSelectionInside(card)) return;
+                this.syncEditorToChunk(index);
+            });
         });
 
         if (!this.chunks[this.activeChunkIndex]) {
@@ -133,8 +152,10 @@ class ChirrThreadView extends ItemView {
         const chunks: TweetChunk[] = [];
         const lineStarts = this.getLineStarts(text);
         const delimiter = /\[\.\.\.\]/g;
-        let segmentStart = 0;
+        const contentStart = this.getContentStartAfterProperties(text);
+        let segmentStart = contentStart;
         let match: RegExpExecArray | null;
+        delimiter.lastIndex = contentStart;
 
         const addSegment = (start: number, end: number) => {
             const trimmedStart = this.skipWhitespaceForward(text, start, end);
@@ -165,6 +186,115 @@ class ChirrThreadView extends ItemView {
         addSegment(segmentStart, text.length);
 
         return chunks;
+    }
+
+    getContentStartAfterProperties(text: string): number {
+        const openingEnd = this.endOfLine(text, 0);
+        if (openingEnd < 0) return 0;
+
+        const openingContentEnd = openingEnd - this.lineBreakLengthAt(text, openingEnd);
+        if (text.slice(0, openingContentEnd).trim() !== "---") return 0;
+
+        let lineStart = openingEnd;
+        while (lineStart < text.length) {
+            const lineEnd = this.endOfLine(text, lineStart);
+            const contentEnd = lineEnd < 0 ? text.length : lineEnd - this.lineBreakLengthAt(text, lineEnd);
+            if (text.slice(lineStart, contentEnd).trim() === "---") {
+                return lineEnd < 0 ? text.length : lineEnd;
+            }
+
+            if (lineEnd < 0) break;
+            lineStart = lineEnd;
+        }
+
+        return 0;
+    }
+
+    endOfLine(text: string, start: number): number {
+        const newlineIndex = text.indexOf("\n", start);
+        return newlineIndex < 0 ? -1 : newlineIndex + 1;
+    }
+
+    lineBreakLengthAt(text: string, endOfLine: number): number {
+        return endOfLine > 1 && text[endOfLine - 2] === "\r" ? 2 : 1;
+    }
+
+    hasSelectionInside(element: HTMLElement): boolean {
+        const selection = window.getSelection();
+        if (!selection || selection.isCollapsed || !selection.toString()) return false;
+
+        const anchorNode = selection.anchorNode;
+        const focusNode = selection.focusNode;
+        return !!(
+            anchorNode &&
+            focusNode &&
+            element.contains(anchorNode) &&
+            element.contains(focusNode)
+        );
+    }
+
+    copySelectedTweetText(event: ClipboardEvent) {
+        const selection = window.getSelection();
+        if (!selection || selection.rangeCount === 0 || selection.isCollapsed) return;
+
+        const anchorBody = this.closestTweetBody(selection.anchorNode);
+        const focusBody = this.closestTweetBody(selection.focusNode);
+        if (!anchorBody || anchorBody !== focusBody) return;
+
+        const selectedText = this.getSelectedTextWithin(anchorBody, selection.getRangeAt(0));
+        if (!selectedText) return;
+
+        event.preventDefault();
+        event.clipboardData?.setData("text/plain", selectedText);
+    }
+
+    async copyTweetText(text: string) {
+        try {
+            await navigator.clipboard.writeText(text);
+            new Notice("Tweet copied");
+        } catch (_error) {
+            if (this.copyTextWithFallback(text)) {
+                new Notice("Tweet copied");
+            } else {
+                new Notice("Tweet copy failed");
+            }
+        }
+    }
+
+    copyTextWithFallback(text: string): boolean {
+        const textarea = document.createElement("textarea");
+        textarea.value = text;
+        textarea.style.position = "fixed";
+        textarea.style.left = "-9999px";
+        textarea.style.top = "0";
+        document.body.appendChild(textarea);
+        textarea.focus();
+        textarea.select();
+
+        try {
+            return document.execCommand("copy");
+        } finally {
+            textarea.remove();
+        }
+    }
+
+    closestTweetBody(node: Node | null): HTMLElement | null {
+        const element = node instanceof HTMLElement ? node : node?.parentElement;
+        return element?.closest(".chirr-card-body") as HTMLElement | null;
+    }
+
+    getSelectedTextWithin(element: HTMLElement, range: Range): string {
+        const text = element.textContent ?? "";
+        const selectedRange = range.cloneRange();
+        const beforeStart = range.cloneRange();
+        const beforeEnd = range.cloneRange();
+
+        beforeStart.selectNodeContents(element);
+        beforeStart.setEnd(selectedRange.startContainer, selectedRange.startOffset);
+        beforeEnd.selectNodeContents(element);
+        beforeEnd.setEnd(selectedRange.endContainer, selectedRange.endOffset);
+
+        return text.slice(beforeStart.toString().length, beforeEnd.toString().length);
     }
 
     splitSegmentByLimit(text: string, start: number, end: number): Array<{ fromOffset: number; toOffset: number }> {
@@ -203,6 +333,7 @@ class ChirrThreadView extends ItemView {
         return text
             .replace(/\[\[([^\]|]+)\|([^\]]+)\]\]/g, (_match, _target, alias) => alias)
             .replace(/\[\[([^\]]+)\]\]/g, (_match, target) => target.split("#")[0])
+            .replace(/\*\*/g, "")
             .replace(/(^|\s)\^[A-Za-z0-9_-]+\b/g, "$1")
             .trim();
     }
