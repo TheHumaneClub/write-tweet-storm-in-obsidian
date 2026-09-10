@@ -343,6 +343,7 @@ class ChirrThreadView extends ItemView {
         return text
             .replace(/\[\[([^\]|]+)\|([^\]]+)\]\]/g, (_match, _target, alias) => alias)
             .replace(/\[\[([^\]]+)\]\]/g, (_match, target) => target.split("#")[0])
+            .replace(/^[ \t]*-{3,}[ \t]*$(?:\r?\n)?/gm, "")
             .replace(/\*\*/g, "")
             .replace(/(^|\s)\^[A-Za-z0-9_-]+\b/g, "$1")
             .trim();
