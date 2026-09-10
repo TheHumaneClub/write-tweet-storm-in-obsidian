@@ -17,10 +17,17 @@
     border-radius: 8px;
     padding: 14px 16px;
     box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    cursor: pointer;
+    transition: border-color 120ms ease, box-shadow 120ms ease, transform 120ms ease;
 }
 
 .chirr-card-error {
     border-color: var(--text-error);
+}
+
+.chirr-card-active {
+    border-color: var(--interactive-accent);
+    box-shadow: 0 0 0 1px var(--interactive-accent), 0 2px 8px rgba(0,0,0,0.08);
 }
 
 .chirr-card-header {
