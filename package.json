@@ -4,6 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "build": "esbuild main.ts --bundle --external:obsidian --format=cjs --target=es2018 --outfile=main.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],

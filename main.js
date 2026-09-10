@@ -48,6 +48,9 @@ var ChirrThreadView = class extends import_obsidian.ItemView {
   getDisplayText() {
     return "Chirr Thread Live Preview";
   }
+  getIcon() {
+    return "message-square";
+  }
   async onOpen() {
     const container = this.containerEl.children[1];
     container.empty();
@@ -357,6 +360,12 @@ var ChirrLivePlugin = class extends import_obsidian.Plugin {
       VIEW_TYPE_CHIRR,
       (leaf) => new ChirrThreadView(leaf)
     );
+    const statusBarItem = this.addStatusBarItem();
+    statusBarItem.setText("Tweet Storm");
+    statusBarItem.title = "Tweet Storm Composer is loaded";
+    this.addRibbonIcon("message-square", "Open Tweet Storm Composer", () => {
+      this.activateView();
+    });
     this.addCommand({
       id: "open-chirr-live-preview",
       name: "Tweet Storm Composer",
@@ -364,14 +373,27 @@ var ChirrLivePlugin = class extends import_obsidian.Plugin {
         this.activateView();
       }
     });
+    this.app.workspace.onLayoutReady(() => {
+      this.ensureView(false);
+    });
+  }
+  async ensureView(reveal) {
+    try {
+      const { workspace } = this.app;
+      let leaf = workspace.getLeavesOfType(VIEW_TYPE_CHIRR)[0];
+      if (!leaf) {
+        leaf = workspace.getRightLeaf(false) || workspace.getLeaf(true);
+        await leaf.setViewState({ type: VIEW_TYPE_CHIRR, active: reveal });
+      }
+      if (reveal) {
+        workspace.revealLeaf(leaf);
+      }
+    } catch (error) {
+      console.error("Tweet Storm Composer failed to open", error);
+      new import_obsidian.Notice("Tweet Storm Composer failed to open. Check the developer console.");
+    }
   }
   async activateView() {
-    const { workspace } = this.app;
-    let leaf = workspace.getLeavesOfType(VIEW_TYPE_CHIRR)[0];
-    if (!leaf) {
-      leaf = workspace.getRightLeaf(false) || workspace.getLeaf(true);
-      await leaf.setViewState({ type: VIEW_TYPE_CHIRR, active: true });
-    }
-    workspace.revealLeaf(leaf);
+    await this.ensureView(true);
   }
 };

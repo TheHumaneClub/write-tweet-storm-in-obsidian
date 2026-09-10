@@ -1,4 +1,4 @@
-import { Plugin, ItemView, WorkspaceLeaf, TFile, MarkdownView, EditorPosition } from 'obsidian';
+import { Plugin, ItemView, WorkspaceLeaf, TFile, MarkdownView, EditorPosition, Notice } from 'obsidian';
 
 const VIEW_TYPE_CHIRR = "chirr-thread-view";
 const CHUNK_LIMIT = 280;
@@ -37,6 +37,10 @@ class ChirrThreadView extends ItemView {
 
     getDisplayText(): string {
         return "Chirr Thread Live Preview";
+    }
+
+    getIcon(): string {
+        return "message-square";
     }
 
     async onOpen() {
@@ -411,6 +415,14 @@ export default class ChirrLivePlugin extends Plugin {
             (leaf) => new ChirrThreadView(leaf)
         );
 
+        const statusBarItem = this.addStatusBarItem();
+        statusBarItem.setText("Tweet Storm");
+        statusBarItem.title = "Tweet Storm Composer is loaded";
+
+        this.addRibbonIcon("message-square", "Open Tweet Storm Composer", () => {
+            this.activateView();
+        });
+
         this.addCommand({
             id: "open-chirr-live-preview",
             name: "Tweet Storm Composer",
@@ -418,17 +430,32 @@ export default class ChirrLivePlugin extends Plugin {
                 this.activateView();
             }
         });
+
+        this.app.workspace.onLayoutReady(() => {
+            this.ensureView(false);
+        });
+    }
+
+    async ensureView(reveal: boolean) {
+        try {
+            const { workspace } = this.app;
+            let leaf = workspace.getLeavesOfType(VIEW_TYPE_CHIRR)[0];
+
+            if (!leaf) {
+                leaf = workspace.getRightLeaf(false) || workspace.getLeaf(true);
+                await leaf.setViewState({ type: VIEW_TYPE_CHIRR, active: reveal });
+            }
+
+            if (reveal) {
+                workspace.revealLeaf(leaf);
+            }
+        } catch (error) {
+            console.error("Tweet Storm Composer failed to open", error);
+            new Notice("Tweet Storm Composer failed to open. Check the developer console.");
+        }
     }
 
     async activateView() {
-        const { workspace } = this.app;
-        let leaf = workspace.getLeavesOfType(VIEW_TYPE_CHIRR)[0];
-
-        if (!leaf) {
-            leaf = workspace.getRightLeaf(false) || workspace.getLeaf(true);
-            await leaf.setViewState({ type: VIEW_TYPE_CHIRR, active: true });
-        }
-
-        workspace.revealLeaf(leaf);
+        await this.ensureView(true);
     }
 }
