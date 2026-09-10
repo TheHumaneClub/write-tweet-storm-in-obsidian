@@ -1,9 +1,9 @@
 {
-  "id": "write-tweet-storm-in-obsidian",
-  "name": "Tweet Storm Composer",
+  "id": "write-tweet-thread",
+  "name": "Write Tweet Thread",
   "version": "1.0.0",
   "minAppVersion": "1.0.0",
-  "description": "An Obsidian plugin that transforms Markdown notes into a live, side-by-side social media thread composer with automatic 280-character slicing and [...] split triggers.",
-  "author": "Custom",
+  "description": "Write social threads from Markdown notes with a live Chirr-style preview, word-aware 280-character slicing, counters, and manual split markers.",
+  "author": "Ritvvij Parrikh",
   "isDesktopOnly": false
 }

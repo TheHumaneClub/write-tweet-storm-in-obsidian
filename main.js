@@ -26,6 +26,8 @@ __export(main_exports, {
 module.exports = __toCommonJS(main_exports);
 var import_obsidian = require("obsidian");
 var VIEW_TYPE_CHIRR = "chirr-thread-view";
+var PLUGIN_DISPLAY_NAME = "Write Tweet Thread";
+var STALE_RIBBON_LABELS = ["Open Tweet Storm Composer", `Open ${PLUGIN_DISPLAY_NAME}`];
 var CHUNK_LIMIT = 280;
 var IDEAL_MIN_LENGTH = 250;
 var SYNC_RELEASE_DELAY = 350;
@@ -47,7 +49,7 @@ var ChirrThreadView = class extends import_obsidian.ItemView {
     return VIEW_TYPE_CHIRR;
   }
   getDisplayText() {
-    return "Chirr Thread Live Preview";
+    return `${PLUGIN_DISPLAY_NAME} Preview`;
   }
   getIcon() {
     return "message-square";
@@ -475,14 +477,15 @@ var ChirrLivePlugin = class extends import_obsidian.Plugin {
       (leaf) => new ChirrThreadView(leaf)
     );
     const statusBarItem = this.addStatusBarItem();
-    statusBarItem.setText("Tweet Storm");
-    statusBarItem.title = "Tweet Storm Composer is loaded";
-    this.addRibbonIcon("message-square", "Open Tweet Storm Composer", () => {
+    statusBarItem.setText(PLUGIN_DISPLAY_NAME);
+    statusBarItem.title = `${PLUGIN_DISPLAY_NAME} is loaded`;
+    this.removeStaleRibbonIcons();
+    this.addRibbonIcon("message-square", `Open ${PLUGIN_DISPLAY_NAME}`, () => {
       this.activateView();
     });
     this.addCommand({
       id: "open-chirr-live-preview",
-      name: "Tweet Storm Composer",
+      name: PLUGIN_DISPLAY_NAME,
       callback: () => {
         this.activateView();
       }
@@ -494,7 +497,9 @@ var ChirrLivePlugin = class extends import_obsidian.Plugin {
   async ensureView(reveal) {
     try {
       const { workspace } = this.app;
-      let leaf = workspace.getLeavesOfType(VIEW_TYPE_CHIRR)[0];
+      const leaves = workspace.getLeavesOfType(VIEW_TYPE_CHIRR);
+      let leaf = leaves[0];
+      await Promise.all(leaves.slice(1).map((extraLeaf) => extraLeaf.detach()));
       if (!leaf) {
         leaf = workspace.getRightLeaf(false) || workspace.getLeaf(true);
         await leaf.setViewState({ type: VIEW_TYPE_CHIRR, active: reveal });
@@ -503,9 +508,17 @@ var ChirrLivePlugin = class extends import_obsidian.Plugin {
         workspace.revealLeaf(leaf);
       }
     } catch (error) {
-      console.error("Tweet Storm Composer failed to open", error);
-      new import_obsidian.Notice("Tweet Storm Composer failed to open. Check the developer console.");
+      console.error(`${PLUGIN_DISPLAY_NAME} failed to open`, error);
+      new import_obsidian.Notice(`${PLUGIN_DISPLAY_NAME} failed to open. Check the developer console.`);
     }
+  }
+  removeStaleRibbonIcons() {
+    document.querySelectorAll(".side-dock-ribbon-action").forEach((element) => {
+      var _a;
+      if (STALE_RIBBON_LABELS.includes((_a = element.getAttribute("aria-label")) != null ? _a : "")) {
+        element.remove();
+      }
+    });
   }
   async activateView() {
     await this.ensureView(true);
