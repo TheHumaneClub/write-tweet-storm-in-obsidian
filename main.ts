@@ -2,6 +2,7 @@ import { Plugin, ItemView, WorkspaceLeaf, TFile, MarkdownView, EditorPosition, N
 
 const VIEW_TYPE_CHIRR = "chirr-thread-view";
 const CHUNK_LIMIT = 280;
+const IDEAL_MIN_LENGTH = 250;
 const SYNC_RELEASE_DELAY = 350;
 
 type SyncSource = "editor" | "sidebar" | null;
@@ -106,6 +107,7 @@ class ChirrThreadView extends ItemView {
             const tweetText = this.toTweetText(chunk.text);
             const charCount = tweetText.length;
             const isOverLimit = charCount > CHUNK_LIMIT;
+            const counterSignal = this.getCounterSignal(charCount);
 
             const card = this.previewList.createDiv({ cls: "chirr-card" });
             card.dataset.chunkIndex = String(index);
@@ -119,7 +121,7 @@ class ChirrThreadView extends ItemView {
             const actions = header.createDiv({ cls: "chirr-card-actions" });
             actions.createSpan({
                 cls: `chirr-counter ${isOverLimit ? 'over-limit' : ''}`, 
-                text: `${charCount}/${CHUNK_LIMIT}` 
+                text: `${counterSignal} ${charCount}/${CHUNK_LIMIT}` 
             });
             const copyButton = actions.createEl("button", {
                 cls: "chirr-copy-button",
@@ -146,6 +148,12 @@ class ChirrThreadView extends ItemView {
         if (!this.chunks[this.activeChunkIndex]) {
             this.activeChunkIndex = -1;
         }
+    }
+
+    getCounterSignal(charCount: number): string {
+        if (charCount > CHUNK_LIMIT) return "🔴";
+        if (charCount >= IDEAL_MIN_LENGTH) return "🟢";
+        return "🟡";
     }
 
     parseChunks(text: string): TweetChunk[] {

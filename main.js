@@ -27,6 +27,7 @@ module.exports = __toCommonJS(main_exports);
 var import_obsidian = require("obsidian");
 var VIEW_TYPE_CHIRR = "chirr-thread-view";
 var CHUNK_LIMIT = 280;
+var IDEAL_MIN_LENGTH = 250;
 var SYNC_RELEASE_DELAY = 350;
 var ChirrThreadView = class extends import_obsidian.ItemView {
   constructor(leaf) {
@@ -105,6 +106,7 @@ var ChirrThreadView = class extends import_obsidian.ItemView {
       const tweetText = this.toTweetText(chunk.text);
       const charCount = tweetText.length;
       const isOverLimit = charCount > CHUNK_LIMIT;
+      const counterSignal = this.getCounterSignal(charCount);
       const card = this.previewList.createDiv({ cls: "chirr-card" });
       card.dataset.chunkIndex = String(index);
       if (isOverLimit) card.addClass("chirr-card-error");
@@ -115,7 +117,7 @@ var ChirrThreadView = class extends import_obsidian.ItemView {
       const actions = header.createDiv({ cls: "chirr-card-actions" });
       actions.createSpan({
         cls: `chirr-counter ${isOverLimit ? "over-limit" : ""}`,
-        text: `${charCount}/${CHUNK_LIMIT}`
+        text: `${counterSignal} ${charCount}/${CHUNK_LIMIT}`
       });
       const copyButton = actions.createEl("button", {
         cls: "chirr-copy-button",
@@ -140,6 +142,11 @@ var ChirrThreadView = class extends import_obsidian.ItemView {
     if (!this.chunks[this.activeChunkIndex]) {
       this.activeChunkIndex = -1;
     }
+  }
+  getCounterSignal(charCount) {
+    if (charCount > CHUNK_LIMIT) return "\u{1F534}";
+    if (charCount >= IDEAL_MIN_LENGTH) return "\u{1F7E2}";
+    return "\u{1F7E1}";
   }
   parseChunks(text) {
     const chunks = [];

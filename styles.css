@@ -58,8 +58,7 @@
 }
 
 .chirr-counter.over-limit {
-    color: var(--text-on-accent);
-    background: var(--text-error);
+    color: var(--text-error);
 }
 
 .chirr-copy-button {
