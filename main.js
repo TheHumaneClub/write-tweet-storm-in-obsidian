@@ -113,7 +113,7 @@ var ChirrThreadView = class extends import_obsidian.ItemView {
       if (index === this.activeChunkIndex) card.addClass("chirr-card-active");
       this.cards.push(card);
       const header = card.createDiv({ cls: "chirr-card-header" });
-      header.createSpan({ text: `${index + 1}/` });
+      header.createSpan({ text: `${index + 1} / ${this.chunks.length}` });
       const actions = header.createDiv({ cls: "chirr-card-actions" });
       actions.createSpan({
         cls: `chirr-counter ${isOverLimit ? "over-limit" : ""}`,
