@@ -1,12 +1,15 @@
 # Obsidian Chirr Thread Preview
 
-Transforms any Markdown note into a live, side-by-side thread composer styled after Chirr App, making it easy to write and format social media threads directly inside Obsidian.
+Write social threads from Obsidian notes with a live Chirr-style preview, word-aware 280-character slicing, real-time counters, and `[...]` split markers.
+
+This plugin turns the active Markdown note into a side-by-side thread composer so you can draft, revise, and preview social posts without leaving Obsidian.
 
 ## Features
 
-* **Live Slicing:** Automatically wraps text into word-aware 280-character chunks.
-* **Explicit Triggers:** Forces a split to the next tweet card instantly whenever `[...]` is typed.
-* **Character Counters:** Displays real-time character count badges (`145/280`) on each card header, highlighting errors when limits are exceeded.
+* **Live Preview:** Shows the active note as a Chirr-style thread beside your Markdown.
+* **Word-Aware Slicing:** Automatically wraps text into 280-character chunks without splitting words when possible.
+* **Manual Split Markers:** Starts a new thread card wherever you type `[...]`.
+* **Character Counters:** Displays real-time count badges (`145/280`) on each card and highlights posts over the limit.
 
 ## Installation
 
