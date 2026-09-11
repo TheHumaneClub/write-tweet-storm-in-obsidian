@@ -337,7 +337,7 @@ var ChirrThreadView = class extends import_obsidian.ItemView {
     return ranges;
   }
   toTweetText(text) {
-    return text.replace(/\[\[([^\]|]+)\|([^\]]+)\]\]/g, (_match, _target, alias) => alias).replace(/\[\[([^\]]+)\]\]/g, (_match, target) => target.split("#")[0]).replace(/^[ \t]*-{3,}[ \t]*$(?:\r?\n)?/gm, "").replace(/\*\*/g, "").replace(/(^|\s)\^[A-Za-z0-9_-]+\b/g, "$1").trim();
+    return text.replace(/\[\[([^\]|]+)\|([^\]]+)\]\]/g, (_match, _target, alias) => alias).replace(/\[\[([^\]]+)\]\]/g, (_match, target) => target.split("#")[0]).replace(/==([^=\n]+)==/g, "$1").replace(/^[ \t]*-{3,}[ \t]*$(?:\r?\n)?/gm, "").replace(/\*\*/g, "").replace(/(^|\s)\^[A-Za-z0-9_-]+\b/g, "$1").trim();
   }
   getLineStarts(text) {
     const starts = [0];
