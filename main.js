@@ -128,8 +128,8 @@ var ChirrThreadView = class extends import_obsidian.ItemView {
     this.chunks.forEach((chunk, index) => {
       const tweetText = this.toTweetText(chunk.text);
       const charCount = tweetText.length;
-      const isOverLimit = charCount > CHUNK_LIMIT;
-      const counterSignal = this.getCounterSignal(charCount);
+      const isOverLimit = charCount > CHUNK_LIMIT || chunk.isAutoSplitOverflow;
+      const counterSignal = isOverLimit ? "\u{1F534}" : this.getCounterSignal(charCount);
       const card = this.previewList.createDiv({ cls: "chirr-card" });
       card.dataset.chunkIndex = String(index);
       if (isOverLimit) card.addClass("chirr-card-error");
@@ -185,6 +185,8 @@ var ChirrThreadView = class extends import_obsidian.ItemView {
       const trimmedStart = this.skipWhitespaceForward(text, start, end);
       const trimmedEnd = this.skipWhitespaceBackward(text, trimmedStart, end);
       if (trimmedStart >= trimmedEnd) return;
+      const segmentText = text.slice(trimmedStart, trimmedEnd);
+      const isAutoSplitOverflow = this.toTweetText(segmentText).length > CHUNK_LIMIT;
       for (const range of this.splitSegmentByLimit(text, trimmedStart, trimmedEnd)) {
         const chunkText = text.slice(range.fromOffset, range.toOffset).trim();
         if (!chunkText) continue;
@@ -196,7 +198,8 @@ var ChirrThreadView = class extends import_obsidian.ItemView {
           fromOffset: range.fromOffset,
           toOffset: range.toOffset,
           fromLine,
-          toLine
+          toLine,
+          isAutoSplitOverflow
         });
       }
     };
